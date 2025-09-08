@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-"""AIG core and frequent-subgraph miner (vendor-neutral)."""
 from dataclasses import dataclass
 from typing import *
 from collections import defaultdict, deque
@@ -175,7 +174,7 @@ def npn_canon_multi_output(tts, k, perm_cap=120000):
             for v in seq:
                 perm_list[pos] = v; pos += 1
         perm = tuple(perm_list)
-        phases = 0
+        phases = 0  # simplification here
         outs_t = tuple(permute_truth_table(f, k, perm, phases) for f in tts)
         outs_sorted, outph = tt_lex_maximize_over_output_phase(outs_t, k)
         outs_sorted = tuple(sorted(outs_sorted, reverse=True))
@@ -222,15 +221,15 @@ def eval_truth_tables(aig, roots, leaves):
             val[nid] = x
     return tuple(val[r] for r in roots)
 
-from dataclasses import dataclass
 @dataclass
 class Pattern:
-    k: int; m: int; canonical_outputs: tuple; count: int = 0; example: dict = None
+    k: int; m: int; canonical_outputs: Tuple[int,...]; count: int = 0; example: Optional[Dict] = None
 
-def mine_frequent_subgraphs(aig, dmax=4, kmax=4, mmax=1, min_support=1, cap_per_node=400, use_random_bucket=True):
+def mine_frequent_subgraphs(aig, dmax=5, kmax=8, mmax=1, min_support=1, cap_per_node=600, use_random_bucket=True):
     levels = aig.compute_levels(); order = aig.topological_order()
     roots = [nid for nid in order if aig.nodes[nid].kind in ('AND','PO')]
-    patterns = {}; canon_cache = {}
+    patterns: Dict[Tuple[int,int,Tuple[int,...]], Pattern] = {}
+    canon_cache = {}
     for r in roots:
         cuts = enumerate_k_feasible_cuts(aig, r, kmax, dmax, levels, cap_per_node=cap_per_node)
         for leaves in cuts:
